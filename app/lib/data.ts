@@ -13,6 +13,9 @@ import {
 
 import { formatCurrency } from './utils';
 
+// Dynamic rendering
+// Use a Next.js API called unstable_noStore inside your Server Components or data fetching functions...
+// to opt out of static rendering.
 import { unstable_noStore as noStore } from 'next/cache';
 
 export async function fetchRevenue() {

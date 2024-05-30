@@ -1,6 +1,8 @@
 import { generateYAxis } from '@/app/lib/utils';
 import { CalendarIcon } from '@heroicons/react/24/outline';
 import { lusitana } from '@/app/ui/fonts';
+
+// SQL queries to be served to the RevenueChart display component
 import { fetchRevenue } from '@/app/lib/data';
 
 // This component is representational only.
