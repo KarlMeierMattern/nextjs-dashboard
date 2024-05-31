@@ -8,6 +8,7 @@ export default function Search({ placeholder }: { placeholder: string }) {
   // Allows you to access the parameters of the current URL
   const searchParams = useSearchParams();
   const pathName = usePathname();
+  // Enables navigation between routes within client components programmatically
   const { replace } = useRouter();
 
   const handleSearch = useDebouncedCallback((term) => {
@@ -15,6 +16,7 @@ export default function Search({ placeholder }: { placeholder: string }) {
     // URLSearchParams is a Web API that provides utility methods for manipulating the URL query parameters.
     // Instead of creating a complex string literal, you can use it to get the params string like ?page=1&query=a.
     const params = new URLSearchParams(searchParams);
+    params.set('page', '1');
     // Set the params string based on the user’s input.
     // If the input is empty, you want to delete it.
     if (term) {
