@@ -35,10 +35,16 @@ export async function createInvoice(formData: FormData) {
     const amountInCents = amount * 100;
     const date = new Date().toISOString().split('T')[0];
     
-    await sql `
-    INSERT INTO invoices (customer_Id, amount, status, date)
-    VALUES (${customerId}, ${amount}, ${status}, ${date})
-    `;
+    try {
+      await sql `
+      INSERT INTO invoices (customer_Id, amount, status, date)
+      VALUES (${customerId}, ${amount}, ${status}, ${date})
+      `;
+    } catch (error) {
+        return {
+          message: 'Database Error: Failed to Create Invoice.'
+        };
+    }
 
     // Since you're updating the data displayed in the invoices route, you want to clear this cache and trigger a new request to the server.
     // Once the database has been updated, the /dashboard/invoices path will be revalidated, and fresh data will be fetched from the server.
@@ -57,21 +63,30 @@ export async function updateInvoice(id: string, formData: FormData) {
    
     const amountInCents = amount * 100;
    
-    await sql`
-      UPDATE invoices
-      SET customer_id = ${customerId}, amount = ${amountInCents}, status = ${status}
-      WHERE id = ${id}
-    `;
+    try {
+      await sql`
+          UPDATE invoices
+          SET customer_id = ${customerId}, amount = ${amountInCents}, status = ${status}
+          WHERE id = ${id}
+        `;
+    } catch (error) {
+      return { message: 'Database Error: Failed to Update Invoice.' };
+    }
 
     // Clear the client cache and make a new server request.
     revalidatePath('/dashboard/invoices');
     redirect('/dashboard/invoices');
   }
 
-  export async function deleteInvoice(id: string) {
-    await sql`DELETE FROM invoices WHERE id = ${id}`;
 
-    // Since this action is being called in the /dashboard/invoices path, you don't need to call redirect.
-    // Calling revalidatePath will trigger a new server request and re-render the table.
+export async function deleteInvoice(id: string) {
+  throw new Error('Failed to Delete Invoice');
+
+  try {
+    await sql`DELETE FROM invoices WHERE id = ${id}`;
     revalidatePath('/dashboard/invoices');
+    return { message: 'Deleted Invoice.' };
+  } catch (error) {
+    return { message: 'Database Error: Failed to Delete Invoice.' };
   }
+}

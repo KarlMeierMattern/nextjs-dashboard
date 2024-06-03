@@ -1,6 +1,7 @@
 import Form from '@/app/ui/invoices/edit-form';
 import Breadcrumbs from '@/app/ui/invoices/breadcrumbs';
 import { fetchInvoiceById, fetchCustomers } from '@/app/lib/data';
+import { notFound } from 'next/navigation';
 
 // In addition to searchParams, page components also accept a prop called params which you can use to access the id
 export default async function Page({ params }: { params: { id: string } }) {
@@ -9,6 +10,11 @@ export default async function Page({ params }: { params: { id: string } }) {
     fetchInvoiceById(id),
     fetchCustomers(),
   ]);
+
+  // <Page> will now throw an error if a specific invoice is not found.
+  if (!invoice) {
+    notFound();
+  }
   return (
     <main>
       <Breadcrumbs
