@@ -42,59 +42,85 @@ export type State = {
   };
   message?: string | null;
 };
- 
+
+// prevState contains the state passed from the useFormState hook.
+// You won't be using it in the action in this example, but it's a required prop.
 export async function createInvoice(prevState: State, formData: FormData) {
-    const { customerId, amount, status } = CreateInvoice.parse({
-        customerId: formData.get('customerId'),
-        amount: formData.get('amount'),
-        status: formData.get('status'),
-    });
-    // storing monetary values in cents eliminates floating-point errors and ensures greater accuracy
-    const amountInCents = amount * 100;
-    const date = new Date().toISOString().split('T')[0];
-    
-    try {
-      await sql `
-      INSERT INTO invoices (customer_Id, amount, status, date)
-      VALUES (${customerId}, ${amount}, ${status}, ${date})
-      `;
-    } catch (error) {
-        return {
-          message: 'Database Error: Failed to Create Invoice.'
-        };
-    }
-
-    // Since you're updating the data displayed in the invoices route, you want to clear this cache and trigger a new request to the server.
-    // Once the database has been updated, the /dashboard/invoices path will be revalidated, and fresh data will be fetched from the server.
-    revalidatePath('/dashboard/invoices');
-
-    // Redirect the user back to the invoices route on form submission.
-    redirect('/dashboard/invoices');
-
-}
-export async function updateInvoice(id: string, formData: FormData) {
-    const { customerId, amount, status } = UpdateInvoice.parse({
+    // safeParse() will return an object containing either a success or error field.
+  const validatedFields = CreateInvoice.safeParse({
       customerId: formData.get('customerId'),
       amount: formData.get('amount'),
       status: formData.get('status'),
-    });
-   
-    const amountInCents = amount * 100;
-   
-    try {
-      await sql`
-          UPDATE invoices
-          SET customer_id = ${customerId}, amount = ${amountInCents}, status = ${status}
-          WHERE id = ${id}
-        `;
-    } catch (error) {
-      return { message: 'Database Error: Failed to Update Invoice.' };
-    }
+  });
 
-    // Clear the client cache and make a new server request.
-    revalidatePath('/dashboard/invoices');
-    redirect('/dashboard/invoices');
+  // If form validation fails, return errors early. Otherwise, continue.
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Missing Fields. Failed to Create Invoice.',
+    };
   }
+
+  // Prepare data for insertion into the database
+  // storing monetary values in cents eliminates floating-point errors and ensures greater accuracy
+  const { customerId, amount, status } = validatedFields.data;
+  const amountInCents = amount * 100;
+  const date = new Date().toISOString().split('T')[0];
+  
+  try {
+    await sql `
+    INSERT INTO invoices (customer_Id, amount, status, date)
+    VALUES (${customerId}, ${amountInCents}, ${status}, ${date})
+    `;
+  } catch (error) {
+      return {
+        message: 'Database Error: Failed to Create Invoice.'
+      };
+  }
+
+  // Since you're updating the data displayed in the invoices route, you want to clear this cache and trigger a new request to the server.
+  // Once the database has been updated, the /dashboard/invoices path will be revalidated, and fresh data will be fetched from the server.
+  revalidatePath('/dashboard/invoices');
+
+  // Redirect the user back to the invoices route on form submission.
+  redirect('/dashboard/invoices');
+
+}
+export async function updateInvoice(
+  id: string,
+  prevState: State,
+  formData: FormData,
+) {
+  const validatedFields = UpdateInvoice.safeParse({
+    customerId: formData.get('customerId'),
+    amount: formData.get('amount'),
+    status: formData.get('status'),
+  });
+ 
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Missing Fields. Failed to Update Invoice.',
+    };
+  }
+ 
+  const { customerId, amount, status } = validatedFields.data;
+  const amountInCents = amount * 100;
+ 
+  try {
+    await sql`
+      UPDATE invoices
+      SET customer_id = ${customerId}, amount = ${amountInCents}, status = ${status}
+      WHERE id = ${id}
+    `;
+  } catch (error) {
+    return { message: 'Database Error: Failed to Update Invoice.' };
+  }
+
+  // Clear the client cache and make a new server request.
+  revalidatePath('/dashboard/invoices');
+  redirect('/dashboard/invoices');
+}
 
 
 export async function deleteInvoice(id: string) {
