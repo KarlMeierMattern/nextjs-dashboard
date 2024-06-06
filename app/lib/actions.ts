@@ -10,6 +10,9 @@ import { revalidatePath } from 'next/cache';
 
 import { redirect } from 'next/navigation';
 
+import { signIn } from '@/auth';
+import { AuthError } from 'next-auth';
+
 // Define a schema that matches the shape of your form object.
 // This schema will validate the formData before saving it to a database.
 // Since you are coercing the amount type from string to number, it'll default to zero if the string is empty. Let's tell Zod we always want the amount greater than 0 with the .gt() function.
@@ -132,5 +135,24 @@ export async function deleteInvoice(id: string) {
     return { message: 'Deleted Invoice.' };
   } catch (error) {
     return { message: 'Database Error: Failed to Delete Invoice.' };
+  }
+}
+
+export async function authenticate(
+  prevState: string | undefined,
+  formData: FormData,
+) {
+  try {
+    await signIn('credentials', formData);
+  } catch (error) {
+    if (error instanceof AuthError) {
+      switch (error.type) {
+        case 'CredentialsSignin':
+          return 'Invalid credentials.';
+        default:
+          return 'Something went wrong.';
+      }
+    }
+    throw error;
   }
 }
